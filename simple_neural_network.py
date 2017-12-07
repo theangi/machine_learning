@@ -50,47 +50,55 @@ def plot_data():
         print('Data: ...')
 
 
-def get_accuracy_for_dnn(hidden_units, steps, verbose=False):
+def remove_model_file():
+    try:
+        shutil.rmtree(MODEL_TEMP_FILE)
+    except FileNotFoundError as e:
+        print('Cannot delete {}. {}'.format(MODEL_TEMP_FILE, e))
+
+
+def prepare_sets():
     download_sets_if_necessary()
-    shutil.rmtree(MODEL_TEMP_FILE)
 
     training_set = tf.contrib.learn.datasets.base.load_csv_with_header(
-      filename=IRIS_TRAINING,
-      target_dtype=np.int,
-      features_dtype=np.float32)
+        filename=IRIS_TRAINING,
+        target_dtype=np.int,
+        features_dtype=np.float32)
 
     test_set = tf.contrib.learn.datasets.base.load_csv_with_header(
-      filename=IRIS_TEST,
-      target_dtype=np.int,
-      features_dtype=np.float32)
+        filename=IRIS_TEST,
+        target_dtype=np.int,
+        features_dtype=np.float32)
 
+    return training_set, test_set
+
+
+def get_accuracy_for_dnn(training_set, test_set, hidden_units, steps):
     number_of_features = 4
 
-    # Specify that all features have real-value data
     feature_columns = [tf.feature_column.numeric_column('x', shape=[number_of_features])]
 
-    # Build 3 layer DNN with 10, 20, 10 units respectively.
-    classifier = tf.estimator.DNNClassifier(feature_columns=feature_columns,
-                                            hidden_units=hidden_units,
-                                            n_classes=3,
-                                            model_dir=MODEL_TEMP_FILE)
+    classifier = tf.estimator.DNNClassifier(
+        feature_columns=feature_columns,
+        hidden_units=hidden_units,
+        n_classes=3,
+        model_dir=MODEL_TEMP_FILE)
 
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
-      x={'x': np.array(training_set.data)},
-      y=np.array(training_set.target),
-      num_epochs=None,
-      shuffle=True)
+        x={'x': np.array(training_set.data)},
+        y=np.array(training_set.target),
+        num_epochs=None,
+        shuffle=True)
 
     classifier.train(input_fn=train_input_fn, steps=steps)
 
     test_input_fn = tf.estimator.inputs.numpy_input_fn(
-      x={'x': np.array(test_set.data)},
-      y=np.array(test_set.target),
-      num_epochs=1,
-      shuffle=False)
+        x={'x': np.array(test_set.data)},
+        y=np.array(test_set.target),
+        num_epochs=1,
+        shuffle=False)
 
     accuracy_score = classifier.evaluate(input_fn=test_input_fn)['accuracy']
-    # print('Test Accuracy: {0:f}\n'.format(accuracy_score))
     return accuracy_score
 
     # new_samples = np.array(
@@ -106,13 +114,22 @@ def get_accuracy_for_dnn(hidden_units, steps, verbose=False):
     # for p in predictions:
     #     print('Class: {} (since probabilities were {})'.format(get_human_result(p['classes']), p['probabilities']))
 
-if __name__ == '__main__':
-    results = {}
-    for x in range(10, 20):
-        for y in range(20, 30):
-            for z in range(10, 20):
-                result = get_accuracy_for_dnn(hidden_units=[x, y, z], steps=1000)
-                if result not in results:
-                    results[result] = (x, y, z)
 
-    print(results)
+if __name__ == '__main__':
+    training, test = prepare_sets()
+
+    results = {}
+    try:
+        for x in range(5, 30):
+            for y in range(5, 30):
+                for z in range(5, 30):
+                    print('Processing {}, {}, {}'.format(x, y, z))
+                    remove_model_file()
+                    result = get_accuracy_for_dnn(training, test, hidden_units=[x, y, z], steps=1000)
+                    if result not in results:
+                        results[result] = (x, y, z)
+        print(results)
+    except KeyboardInterrupt as e:
+        # For ctrl + c when you are done :)
+        print(results)
+
