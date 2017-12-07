@@ -50,7 +50,7 @@ def plot_data():
         print('Data: ...')
 
 
-def main(hidden_units, steps, verbose=False):
+def get_accuracy_for_dnn(hidden_units, steps, verbose=False):
     download_sets_if_necessary()
     shutil.rmtree(MODEL_TEMP_FILE)
 
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     for x in range(10, 20):
         for y in range(20, 30):
             for z in range(10, 20):
-                result = main(hidden_units=[x, y, z], steps=1000)
+                result = get_accuracy_for_dnn(hidden_units=[x, y, z], steps=1000)
                 if result not in results:
                     results[result] = (x, y, z)
 
